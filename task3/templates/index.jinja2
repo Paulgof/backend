@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task 3</title>
+    <link rel="stylesheet" href="/task3/style.css">
+</head>
+<body>
+<div class="main_content">
+
+            {% if status == 201 %}
+                <p>Данные успешно сохранены</p>
+            {% elif status == 400 %}
+                <p>Неверно введены поля: {{ errors }}</p>
+            {% endif %}
+
+            <form id="entity_form" method="POST" action="http://localhost:8080/task3">
+
+                <label>
+                    Имя:<br />
+                    <input name="entity_name" placeholder="Иван Иванов" />
+                </label><br />
+
+                <label>
+                    E-mail:<br />
+                    <input name="entity_email"
+                           type="email"
+                           placeholder="email@example.com" />
+                </label><br />
+
+                <label>
+                    Дата рождения:<br />
+                    <select name="entity_birth">
+                        {% for i in range(1900, 2000) %}
+                            <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                        <option value="2000" selected>2000</option>
+                        {% for i in range(2001, 2021) %}
+                            <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </label><br />
+
+                Пол:<br />
+                <label><input type="radio" checked="checked"
+                              name="gender-group" value="male" />
+                    Мужской</label><br />
+                <label><input type="radio"
+                              name="gender-group" value="female" />
+                    Женский</label><br />
+                <label><input type="radio"
+                              name="gender-group" value="xenos" />
+                    Другое</label><br />
+                <br />
+
+                Количество конечностей:<br />
+                <label><input type="radio" checked="checked"
+                              name="limbs" value="first_range" />
+                    1 - 2</label><br />
+                <label><input type="radio"
+                              name="limbs" value="second_range" />
+                    3 - 4</label><br />
+                <label><input type="radio"
+                              name="limbs" value="xenos_range" />
+                    Больше</label><br />
+                <br />
+
+                <label>
+                    Сверхспособности:
+                    <br />
+                    <select name="superpowers"
+                            multiple="multiple">
+                        <option value="immortality">Бессмертие</option>
+                        <option value="de_materialism">Прохождение сквозь стены</option>
+                        <option value="levitation">Левитация</option>
+                    </select>
+                </label><br />
+                <br />
+
+                <label>
+                    Биография:<br />
+                    <textarea name="bio"></textarea>
+                </label><br />
+                <br />
+
+                <label><input type="checkbox" name="check-1" />
+                    с контрактом ознакомлен</label><br />
+                <br />
+
+                <input type="submit" value="Отправить" />
+
+            </form>
+        </div>
+</body>
+</html>
