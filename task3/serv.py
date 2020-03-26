@@ -2,6 +2,7 @@ from aiohttp import web
 import aiohttp_jinja2
 import jinja2
 import asyncpg
+from asyncpg.exceptions import DuplicateTableError
 import re
 
 FIELDS = {'entity_email', 'check-1', 'bio', 'superpowers', 'gender-group', 'entity_birth', 'entity_name', 'limbs'}
@@ -21,25 +22,30 @@ insert_query = 'INSERT INTO forms (name, email, year, gender, limbs, superpowers
 
 
 app = web.Application()
-routes = web.RouteTableDef()
 aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('./templates'))
 
 
+async def create_table():
+    con = await asyncpg.connect(user='kmx', database='back')
+    try:
+        await con.execute(create_query)
+    except DuplicateTableError:
+        print("Table forms already exists")
+    await con.close()
+
+
 async def insert(data):
-    con = await asyncpg.connect(user='kmx',
-                                 database='back')
+    con = await asyncpg.connect(user='kmx', database='back')
     await con.execute(insert_query, data['entity_name'], data['entity_email'], int(data['entity_birth']),
                      data['gender-group'], data['limbs'], data.getall('superpowers'), data['bio'])
     await con.close()
 
 
-@routes.get('/task3')
 @aiohttp_jinja2.template('index.jinja2')
 async def index(request):
     return {'status': 200, 'errors': []}
 
 
-@routes.post('/task3')
 @aiohttp_jinja2.template('index.jinja2', status=201)
 async def form(request):
     data = await request.post()
@@ -70,6 +76,16 @@ async def form(request):
     await insert(data)
     return {'status': 201, 'errors': []}
 
+
+async def entrance():
+    await create_table()
+    app.add_routes([
+        web.get('/task3', index),
+        web.get('/task3/', index),
+        web.post('/task3', form),
+        web.post('/task3/', form)
+    ])
+    return app
 
 if __name__ == '__main__':
     app.add_routes(routes)
