@@ -3,7 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Task 3</title>
-    <link rel="stylesheet" href="/task3/style.css">
+    <style type="text/css">
+        body {
+            background-color: #ccc;
+        }
+
+        .main_content {
+            background-color: #fff;
+            max-width: 960px;
+            margin: 10px auto;
+        }
+
+        form {
+            margin: 20px;
+            padding: 20px 0;
+        }
+    </style>
 </head>
 <body>
 <div class="main_content">
@@ -14,7 +29,7 @@
                 <p>Неверно введены поля: {{ errors }}</p>
             {% endif %}
 
-            <form id="entity_form" method="POST" action="http://localhost:8080/task3">
+            <form id="entity_form" method="POST" action="/task3">
 
                 <label>
                     Имя:<br />
