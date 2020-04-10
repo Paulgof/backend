@@ -18,30 +18,42 @@
             margin: 20px;
             padding: 20px 0;
         }
+
+        .error {
+            outline: 2px solid red;
+        }
+
     </style>
 </head>
 <body>
 <div class="main_content">
 
-            {% if status == 201 %}
-                <p>Данные успешно сохранены</p>
-            {% elif status == 400 %}
-                <p>Неверно введены поля: {{ errors }}</p>
-            {% endif %}
 
             <form id="entity_form" method="POST" action="/task3">
 
                 <label>
                     Имя:<br />
-                    <input name="entity_name" placeholder="Иван Иванов" />
-                </label><br />
+                    <input name="entity_name"
+                           id="entity_name"
+                           placeholder="Иван Иванов"
+                           value={{ cookies['entity_name'] if 'entity_name' in cookies }}
+                           {% if 'entity_name' in errors%}class="error"{% endif %} />
+                </label>
+
+                {% if 'entity_name' in incor %}<p>Можно использовать только буквы и знак пробела</p>{% endif %}
+
+                <br />
 
                 <label>
                     E-mail:<br />
                     <input name="entity_email"
-                           type="email"
-                           placeholder="email@example.com" />
+                           id="entity_email"
+                           placeholder="email@example.com"
+                           value={{ cookies['entity_email'] if 'entity_email' in cookies }}
+                           {% if 'entity_email' in errors%}class="error"{% endif %} />
                 </label><br />
+
+                {% if 'entity_email' in incor %}<p>Должно соответствовать формату email</p>{% endif %}
 
                 <label>
                     Дата рождения:<br />
@@ -83,8 +95,9 @@
                 <label>
                     Сверхспособности:
                     <br />
-                    <select name="superpowers"
-                            multiple="multiple">
+                    <select id="superpowers" name="superpowers"
+                            multiple="multiple"
+                           {% if 'superpowers' in errors%}class="error"{% endif %}>
                         <option value="immortality">Бессмертие</option>
                         <option value="de_materialism">Прохождение сквозь стены</option>
                         <option value="levitation">Левитация</option>
@@ -94,11 +107,12 @@
 
                 <label>
                     Биография:<br />
-                    <textarea name="bio"></textarea>
+                    <textarea name="bio" {% if 'bio' in errors%}class="error"{% endif %}></textarea>
                 </label><br />
                 <br />
 
-                <label><input type="checkbox" name="check-1" />
+                <label>
+                    <input id="check" type="checkbox" name="check" {% if 'check' in errors%}class="error"{% endif %}/>
                     с контрактом ознакомлен</label><br />
                 <br />
 

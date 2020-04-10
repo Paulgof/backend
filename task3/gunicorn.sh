@@ -1,0 +1,1 @@
+gunicorn serv:entrance --bind 0.0.0.0:8888 --worker-class aiohttp.GunicornWebWorker -w 1
