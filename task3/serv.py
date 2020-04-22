@@ -92,9 +92,7 @@ async def form(request):
 async def entrance():
     await create_table()
     app.add_routes([
-        web.get('/task3', index),
-        web.get('/task3/', index),
-        web.post('/task3', form),
+        web.get(r'/task3/', index),
         web.post('/task3/', form)
     ])
     return app

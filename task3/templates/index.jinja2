@@ -36,7 +36,7 @@
                     <input name="entity_name"
                            id="entity_name"
                            placeholder="Иван Иванов"
-                           value={{ cookies['entity_name'] if 'entity_name' in cookies }}
+                           {% if 'entity_name' in cookies %}value="{{ cookies['entity_name'] }}"{% endif %}
                            {% if 'entity_name' in errors%}class="error"{% endif %} />
                 </label>
 
@@ -49,7 +49,7 @@
                     <input name="entity_email"
                            id="entity_email"
                            placeholder="email@example.com"
-                           value={{ cookies['entity_email'] if 'entity_email' in cookies }}
+                           {% if 'entity_email' in cookies %}value="{{ cookies['entity_email'] }}"{% endif %}
                            {% if 'entity_email' in errors%}class="error"{% endif %} />
                 </label><br />
 
