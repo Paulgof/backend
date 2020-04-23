@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход</title>
+    <style type="text/css">
+        body {
+            background-color: #ccc;
+        }
+
+        .main_content {
+            background-color: #fff;
+            max-width: 960px;
+            margin: 10px auto;
+            position: absolute;
+            left: 50%;
+            top: 42%;
+            transform: translate(-50%, -50%);
+        }
+
+        form {
+            display: block;
+            width: 300px;
+            margin: 20px auto 5px;
+            padding: 20px;
+        }
+
+        input {
+            margin: 5px 0;
+            width: 93.5%;
+
+        }
+
+        #button_wrapper input {
+            width: 49%;
+            height: 30px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            opacity: 0.9;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #reg_btn {
+            background-color: darkgray;
+        }
+
+        #submit_btn {
+            background-color: mediumspringgreen;
+        }
+
+        .info {
+            font-size: 12px;
+            font-style: italic;
+            color: darkgray;
+            width: 310px;
+            margin: 0 auto;
+            padding-bottom: 10px;
+        }
+
+        .error_message {
+            font-size: 12px;
+            color: #ff4f56;
+            width: 310px;
+            margin: 0 auto;
+            padding-bottom: 10px;
+        }
+
+        .error {
+            outline: 2px solid red;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="main_content">
+        <form method="POST" action="/task3/login">
+            <label>
+                <input name="login_name" type="text" placeholder="Логин"
+                {% if incor_login or login_taken or unknown_login %}class="error"{% endif %}/>
+            </label>
+            <br>
+            <label>
+                <input name="login_pass" type="password" placeholder="Пароль"
+                {% if incor_pass or wrong_pass %}class="error"{% endif %}/>
+            </label>
+            <br>
+            <div id="button_wrapper">
+                <input id="reg_btn" type="submit" name="sign_type" value="Sign Up"/>
+                <input id="submit_btn" type="submit" name="sign_type" value="Login"/>
+            </div>
+        </form>
+        <div class="info">
+            Для генерации логина и пароля <b>при регистрации</b> поля оставить пустыми!
+        </div>
+        {% if wrong_pass or login_taken or unknown_login %}
+            <div class="error_message">
+            {% if wrong_pass %} Неверный пароль {% endif %}
+            {% if login_taken %} Логин занят. Выберете другой. {% endif %}
+            {% if unknown_login %} Такого логина нет. {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</body>
