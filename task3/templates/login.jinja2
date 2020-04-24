@@ -96,9 +96,9 @@
         </div>
         {% if wrong_pass or login_taken or unknown_login %}
             <div class="error_message">
-            {% if wrong_pass %} Неверный пароль {% endif %}
-            {% if login_taken %} Логин занят. Выберете другой. {% endif %}
-            {% if unknown_login %} Такого логина нет. {% endif %}
+            {% if wrong_pass %} Неверный пароль <br>{% endif %}
+            {% if login_taken %} Логин занят. Выберете другой. <br>{% endif %}
+            {% if unknown_login %} Такого логина нет. <br>{% endif %}
             </div>
         {% endif %}
     </div>

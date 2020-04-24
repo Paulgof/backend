@@ -21,6 +21,15 @@ def random_hash():
     return md5(bytes(str(time.time()), encoding='utf-8')).hexdigest()
 
 
+def records_to_dict(recs):
+    rec_dict = {'records': []}
+    for r in recs:
+        rec_dict['records'].append(dict())
+        for key in r.keys():
+            rec_dict['records'][-1][key] = r[key]
+    return rec_dict
+
+
 async def login(request):
     session = await get_session(request)
     sid = session['sid'] if 'sid' in session else None
@@ -38,10 +47,16 @@ async def login(request):
     return response
 
 
+async def logout(request):
+    session = await get_session(request)
+    session['sid'] = None
+    return web.HTTPSeeOther('/task3/set_form/0')
+
+
 async def auth(request):
     success = True
     fall_response = web.HTTPSeeOther('/task3/login')
-    success_response = web.HTTPSeeOther('/task3/')
+    success_response = web.HTTPSeeOther('/task3/set_form/0')
     data = await request.post()
     session = await get_session(request)
     if data['sign_type'] == 'Sign Up':
@@ -54,6 +69,7 @@ async def auth(request):
                 sid = random_hash()
                 await db.update_sid(gen_login, sid)
                 session['sid'] = sid
+                success_response.set_cookie('user_generated', '1', max_age=5)
                 success_response.set_cookie('login', gen_login, max_age=5)
                 success_response.set_cookie('passwd', password, max_age=5)
             except KeyError:
@@ -67,22 +83,24 @@ async def auth(request):
             if re.match(r'^[a-zA-Z0-9_]+$', data['login_name']) is None:
                 success = False
                 fall_response.set_cookie('incor_pass', '1', max_age=5)
-            try:
-                await db.insert_user(data['login_name'],
-                                     md5(bytes(data['login_pass'], encoding='utf-8')).hexdigest())
-                sid = random_hash()
-                await db.update_sid(data['login_name'], sid)
-                session['sid'] = sid
-            except KeyError:
-                success = False
-                fall_response.set_cookie('login_taken', '1', max_age=5)
+            if success:
+                try:
+                    await db.insert_user(data['login_name'],
+                                         md5(bytes(data['login_pass'], encoding='utf-8')).hexdigest())
+                    sid = random_hash()
+                    await db.update_sid(data['login_name'], sid)
+                    session['sid'] = sid
+                except KeyError:
+                    success = False
+                    fall_response.set_cookie('login_taken', '1', max_age=5)
     else:
-        if data['login_name'] != "" and data['login_pass'] != "":
+        if data['login_name'] != "" and data['login_pass'] != ""\
+                and all(re.match(r'^[a-zA-Z0-9_]+$', x) is not None for x in [data['login_name'], data['login_pass']]):
             password = await db.get_password(data['login_name'])
             if password is None:
                 success = False
                 fall_response.set_cookie('unknown_login', '1', max_age=5)
-            if md5(bytes(data['login_pass'], encoding='utf-8')).hexdigest() == password:
+            elif md5(bytes(data['login_pass'], encoding='utf-8')).hexdigest() == password:
                 sid = random_hash()
                 await db.update_sid(data['login_name'], sid)
                 session['sid'] = sid
@@ -91,24 +109,35 @@ async def auth(request):
                 fall_response.set_cookie('wrong_pass', '1', max_age=5)
         else:
             success = False
+            fall_response.set_cookie('incor_login', '1', max_age=5)
+            fall_response.set_cookie('incor_pass', '1', max_age=5)
     if success:
         return success_response
     return fall_response
 
 
 async def index(request):
-    print(request.cookies)
     session = await get_session(request)
-    print(session)
-    # last_visit = session['last_visit'] if 'last_visit' in session else None
-    # session['last_visit'] = time.time()
-    # print('Last visited: {}'.format(last_visit))
     sid = session['sid'] if 'sid' in session else None
-    # if sid is None:
-    #     return web.HTTPSeeOther('/task3/login')
+    sess_login = None
+    recs = None
+
+    if sid:
+        sess_login = await db.get_login_by_sid(sid)
+        uid = await db.get_uid_by_sid(sid)
+        records = await db.get_forms_by_uid(uid)
+        recs = records_to_dict(records)
+
     errors = request.cookies['errors'] if 'errors' in request.cookies else ""
     incor = request.cookies['incor_fields'] if 'incor_fields' in request.cookies else ""
-    context = {'cookies': request.cookies, 'errors': errors, 'incor': incor}
+    context = {
+        'cookies': request.cookies,
+        'errors': errors,
+        'incor': incor,
+        'is_auth': bool(sid),
+        'sess_login': sess_login,
+        'recs': recs
+    }
     response = aiohttp_jinja2.render_template('index.jinja2', request, context)
     return response
 
@@ -117,8 +146,11 @@ async def form(request):
     data = await request.post()
     keys_set = {k for k in data}
     response = web.HTTPSeeOther('/task3/')
+    session = await get_session(request)
+    sid = session['sid'] if 'sid' in session else None
     errors = []
     incorrect_fields = []
+
     if len(FIELDS - keys_set) > 0:
         errors.extend(FIELDS - keys_set)
     elif len(keys_set - FIELDS) > 0:
@@ -144,8 +176,44 @@ async def form(request):
     if len(errors) > 0:
         response.set_cookie('saved', 'False', max_age=1)
     else:
-        await db.insert_form(data)
-        response.set_cookie('saved', 'True', max_age=YEAR)
+        if sid:
+            uid = await db.get_uid_by_sid(sid)
+        else:
+            gen_login = await db.get_generated_user()
+            gen_login = "user" + str(gen_login)
+            password = random_hash()[:8]
+            await db.insert_user(gen_login, md5(bytes(password, encoding='utf-8')).hexdigest())
+            sid = random_hash()
+            await db.update_sid(gen_login, sid)
+            session['sid'] = sid
+            response.set_cookie('user_generated', '1', max_age=5)
+            response.set_cookie('login', gen_login, max_age=5)
+            response.set_cookie('passwd', password, max_age=5)
+            uid = await db.get_uid_by_sid(sid)
+        if 'fid' in request.cookies:
+            await db.update_form(int(request.cookies['fid']), data)
+        else:
+            await db.insert_form(data)
+            fid = await db.get_last_fid()
+            await db.insert_u2f(uid, fid)
+        response.set_cookie('saved', 'True', max_age=1)
+    return response
+
+
+async def set_form(request):
+    response = web.HTTPSeeOther('/task3/')
+    rid = int(request.match_info['id'])
+    if rid == 0:
+        response.set_cookie('entity_name', '', max_age=0)
+        response.set_cookie('entity_email', '', max_age=0)
+        response.set_cookie('fid', '0', max_age=0)
+    else:
+        form_row = await db.get_form_by_id(rid)
+        f_row = records_to_dict([form_row])['records'][0]
+        response.set_cookie('entity_name', f_row['name'], max_age=YEAR)
+        response.set_cookie('entity_email', f_row['email'], max_age=YEAR)
+        response.set_cookie('fid', f_row['id'], max_age=YEAR)
+
     return response
 
 
@@ -156,7 +224,9 @@ async def entrance():
         web.get('/task3/', index),
         web.post('/task3/', form),
         web.get('/task3/login', login),
-        web.post('/task3/login', auth)
+        web.post('/task3/login', auth),
+        web.get('/task3/logout', logout),
+        web.get('/task3/set_form/{id}', set_form)
     ])
     setup(app, SimpleCookieStorage())
     return app
