@@ -196,6 +196,7 @@ async def form(request):
             await db.insert_form(data)
             fid = await db.get_last_fid()
             await db.insert_u2f(uid, fid)
+            response.set_cookie('fid', fid, max_age=YEAR)
         response.set_cookie('saved', 'True', max_age=1)
     return response
 
