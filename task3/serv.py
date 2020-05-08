@@ -1,9 +1,9 @@
-from aiohttp_session import setup, get_session
-from aiohttp_session import SimpleCookieStorage
+from aiohttp_session import setup, get_session, SimpleCookieStorage, session_middleware
 from aiohttp import web
 from hashlib import md5
 import aiohttp_jinja2
 import jinja2
+import base64
 import time
 import re
 import db
@@ -155,7 +155,7 @@ async def form(request):
         errors.extend(FIELDS - keys_set)
     elif len(keys_set - FIELDS) > 0:
         errors.append('too many fields')
-    empties = list(filter(lambda x: data[x] is '', ('entity_name', 'entity_email', 'bio')))
+    empties = list(filter(lambda x: data[x] == '', ('entity_name', 'entity_email', 'bio')))
 
     if len(empties) > 0:
         errors.extend(empties)
@@ -218,6 +218,43 @@ async def set_form(request):
     return response
 
 
+async def delete_form(request):
+    response = web.HTTPSeeOther('/task3/admin')
+    if 'iadmin' in request.cookies:
+        rid = int(request.match_info['id'])
+        if rid == 0:
+            await db.delete_all_forms()
+        else:
+            await db.delete_form_by_id(rid)
+    return response
+
+
+async def admin_page(request):
+    if 'Authorization' in request.headers:
+        base64_message = request.headers['Authorization'].split()[1]
+        base64_bytes = base64_message.encode('ascii')
+        message_bytes = base64.b64decode(base64_bytes)
+        message = message_bytes.decode('ascii')
+        user, password = message.split(":")
+
+        true_pass = await db.get_admin_password(user)
+        if md5(bytes(password, encoding='utf-8')).hexdigest() == true_pass and true_pass != "":
+            forms = records_to_dict(await db.fetch_all_forms())
+            context = {
+                'admin': user,
+                'forms': forms['records']
+            }
+            response = aiohttp_jinja2.render_template('admin.jinja2', request, context)
+            response.set_cookie('iadmin', '1', max_age=3600)
+        else:
+            response = web.Response(status=401, text="401: Неверные данные")
+            response.headers.add('WWW-Authenticate', 'Basic')
+    else:
+        response = web.Response(status=401, text="401: Требуется авторизация")
+        response.headers.add('WWW-Authenticate', 'Basic')
+    return response
+
+
 async def entrance():
     await db.create_tables()
     app.add_routes([
@@ -227,7 +264,9 @@ async def entrance():
         web.get('/task3/login', login),
         web.post('/task3/login', auth),
         web.get('/task3/logout', logout),
-        web.get('/task3/set_form/{id}', set_form)
+        web.get('/task3/set_form/{id}', set_form),
+        web.get('/task3/admin', admin_page),
+        web.get('/task3/del_form/{id}', delete_form)
     ])
     setup(app, SimpleCookieStorage())
     return app
